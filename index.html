@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>흰구 꾸미기</title>
+  <meta name="description" content="귀여운 캐릭터 wheen_gu를 배경, 의상, 소품으로 꾸미는 웹 게임입니다." />
+  <meta property="og:title" content="흰구 꾸미기" />
+  <meta property="og:description" content="wheen_gu를 직접 꾸미고 PNG로 저장해보세요." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="main.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&display=swap");
+    :root {
+      --ink: #28231f;
+      --paper: #fffdf8;
+      --accent: #7b61ff;
+      --accent-soft: #eee9ff;
+      --shadow: rgba(40, 35, 31, 0.14);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Gaegu", system-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+      font-size: 18px;
+      line-height: 1.24;
+      color: var(--ink);
+      background: #f8f2e8;
+    }
+    button { font: inherit; }
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 430px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .panel {
+      background: rgba(255, 253, 248, 0.94);
+      border: 3px solid var(--ink);
+      border-radius: 28px;
+      box-shadow: 7px 7px 0 rgba(40, 35, 31, 0.12);
+    }
+    .preview-panel { padding: 14px; }
+    .stage-wrap {
+      position: relative;
+      width: 100%;
+      border: 3px solid var(--ink);
+      border-radius: 24px;
+      overflow: hidden;
+      background: #fff;
+    }
+    #avatarSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1580 / 2270;
+      background: #fffdf8;
+      touch-action: none;
+    }
+    .speaker-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 50;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.88);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .speaker-btn svg { width: 21px; height: 21px; fill: currentColor; display: block; }
+    .speaker-btn.is-playing { background: rgba(40, 35, 31, 0.86); color: #fffdf8; }
+    .delete-zone {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      z-index: 40;
+      height: 74px;
+      border-radius: 22px;
+      background: rgba(40, 35, 31, 0.72);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 21px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.14s ease, transform 0.14s ease, background 0.14s ease;
+      pointer-events: none;
+    }
+    .delete-zone.show { opacity: 1; transform: translateY(0); }
+    .delete-zone.hot { background: rgba(226, 74, 74, 0.92); }
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .action-btn, .tab, .item-btn {
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      background: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .action-btn {
+      border-radius: 999px;
+      padding: 11px 8px 10px;
+      box-shadow: 3px 3px 0 var(--ink);
+      font-size: 18px;
+      line-height: 1.05;
+      white-space: nowrap;
+    }
+    .control-panel { padding: 14px; }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 13px;
+    }
+    .tab {
+      padding: 10px 13px 9px;
+      border-radius: 999px;
+      box-shadow: 2px 2px 0 var(--ink);
+      font-size: 17px;
+      line-height: 1.05;
+      white-space: nowrap;
+    }
+    .tab[aria-selected="true"] {
+      color: #fff;
+      background: var(--ink);
+      box-shadow: none;
+    }
+    .items {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+    }
+    .item-btn {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1 / 1;
+      padding: 6px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fffdf8;
+    }
+    .item-btn.active {
+      background: var(--accent-soft);
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .item-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      pointer-events: none;
+    }
+    .background-thumb img {
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .start-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 28px;
+      background:
+        radial-gradient(circle at 24% 22%, rgba(255, 246, 188, 0.95), transparent 30%),
+        radial-gradient(circle at 78% 18%, rgba(238, 232, 255, 0.95), transparent 32%),
+        radial-gradient(circle at 54% 76%, rgba(222, 236, 216, 0.95), transparent 34%),
+        #fff8e8;
+      color: var(--ink);
+      transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s ease;
+    }
+    body.game-started .start-screen {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-10px);
+    }
+    .start-card {
+      display: grid;
+      justify-items: center;
+      gap: 14px;
+      width: min(420px, 100%);
+      padding: 34px 24px 30px;
+      border: 3px solid var(--ink);
+      border-radius: 34px;
+      background: rgba(255, 253, 248, 0.90);
+      box-shadow: 8px 8px 0 rgba(40, 35, 31, 0.12);
+      text-align: center;
+    }
+    .start-title {
+      margin: 0;
+      font-size: clamp(52px, 14vw, 90px);
+      line-height: 0.92;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+    .start-button {
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fffdf8;
+      padding: 12px 26px 11px;
+      min-width: 158px;
+      box-shadow: 4px 4px 0 rgba(40, 35, 31, 0.18);
+      cursor: pointer;
+      font-size: 26px;
+      font-weight: 700;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .start-button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(40, 35, 31, 0.18); }
+    .instagram-link {
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      color: var(--ink);
+      background: rgba(255, 253, 248, 0.82);
+      text-decoration: none;
+      box-shadow: 4px 4px 0 rgba(40, 35, 31, 0.12);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .instagram-link svg { width: 25px; height: 25px; display: block; }
+    .game-instagram-link {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      z-index: 35;
+      transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
+      transform: translateY(6px);
+    }
+    body.game-started .game-instagram-link {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .game-app { transition: opacity 0.24s ease, transform 0.24s ease; }
+    body:not(.game-started) .game-app {
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      user-select: none;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      max-width: calc(100vw - 40px);
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 21px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease, transform 0.16s ease;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+    .draggable-layer { cursor: grab; touch-action: none; }
+    @media (max-width: 840px) {
+      .layout { grid-template-columns: 1fr; }
+      .actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+    }
+    @media (max-width: 460px) {
+      body { font-size: 18px; }
+      .app { padding: 10px; }
+      .preview-panel, .control-panel { padding: 10px; }
+      .actions { gap: 6px; margin-top: 10px; }
+      .action-btn { font-size: 17px; padding: 10px 4px 9px; box-shadow: 2px 2px 0 var(--ink); }
+      .items { gap: 7px; }
+      .tab { font-size: 16px; padding: 9px 10px 8px; }
+      .start-button { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="start-screen" id="startScreen" aria-label="시작 화면">
+    <div class="start-card">
+      <h1 class="start-title">흰구 꾸미기</h1>
+      <button class="start-button" id="startGameBtn" type="button">꾸미러가기</button>
+    </div>
+    <a class="instagram-link" href="https://www.instagram.com/wheen_gu" target="_blank" rel="noopener" aria-label="wheen_gu 인스타그램 열기">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3.4" y="3.4" width="17.2" height="17.2" rx="5.2"></rect>
+        <circle cx="12" cy="12" r="4.1"></circle>
+        <circle cx="17.3" cy="6.9" r="0.8" fill="currentColor" stroke="none"></circle>
+      </svg>
+    </a>
+  </div>
+  <main class="app game-app" id="gameApp">
+    <div class="layout">
+      <section class="panel preview-panel" aria-label="흰구 미리보기">
+        <div class="stage-wrap" id="stageWrap">
+          <button class="speaker-btn" id="speakerBtn" type="button" aria-label="배경음악 켜기">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path id="speakerIconPath" d="M4 9v6h4l5 4V5L8 9H4zm12.4 1.1-1.4 1.4 1.4 1.4-1.4 1.4 1.4 1.4 1.4-1.4 1.4 1.4 1.4-1.4-1.4-1.4 1.4-1.4-1.4-1.4-1.4 1.4-1.4-1.4z"/></svg>
+          </button>
+          <a class="instagram-link game-instagram-link" href="https://www.instagram.com/wheen_gu" target="_blank" rel="noopener" aria-label="wheen_gu 인스타그램 열기">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.4" y="3.4" width="17.2" height="17.2" rx="5.2"></rect>
+          <circle cx="12" cy="12" r="4.1"></circle>
+          <circle cx="17.3" cy="6.9" r="0.8" fill="currentColor" stroke="none"></circle>
+          </svg>
+          </a>
+          <div class="delete-zone" id="deleteZone">삭제</div>
+          <svg id="avatarSvg" viewBox="0 0 1580 2270" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="wheen_gu 꾸미기 미리보기">
+            <g id="backgroundLayer"></g>
+            <image id="baseCharacter" href="assets/embedded/img_001.png" x="0" y="0" width="1580" height="2270" preserveAspectRatio="xMidYMid meet" />
+            <g id="wearableLayerRoot"></g>
+          </svg>
+        </div>
+        <div class="actions">
+          <button class="action-btn" id="randomBtn" type="button">랜덤</button>
+          <button class="action-btn" id="resetBtn" type="button">초기화</button>
+          <button class="action-btn" id="downloadBtn" type="button">저장</button>
+        </div>
+      </section>
+      <section class="panel control-panel" aria-label="항목 선택">
+        <nav class="tabs" id="tabs" aria-label="카테고리"></nav>
+        <div class="items" id="items"></div>
+      </section>
+    </div>
+  </main>
+  <audio id="bgmAudio" loop preload="auto" playsinline src="assets/embedded/audio_002.mp3"></audio>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    const NS = "http://www.w3.org/2000/svg";
+    const BACKGROUNDS = [{"id": "background_01", "name": "background_01", "src": "assets/embedded/img_003.png", "thumb": "assets/embedded/img_004.png"}, {"id": "background_02", "name": "background_02", "src": "assets/embedded/img_005.png", "thumb": "assets/embedded/img_006.png"}, {"id": "background_03", "name": "background_03", "src": "assets/embedded/img_007.png", "thumb": "assets/embedded/img_008.png"}, {"id": "background_04", "name": "background_04", "src": "assets/embedded/img_009.png", "thumb": "assets/embedded/img_010.png"}, {"id": "background_05", "name": "background_05", "src": "assets/embedded/img_011.png", "thumb": "assets/embedded/img_012.png"}];
+    const DATA = {"accessory": [{"id": "none", "name": "없음", "src": "", "thumb": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20240%20240%27%3E%0A%3Crect%20x%3D%2724%27%20y%3D%2724%27%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2730%27%20fill%3D%27%23fffdf8%27%20stroke%3D%27%23b7b1aa%27%20stroke-width%3D%279%27%20stroke-dasharray%3D%2715%2011%27/%3E%0A%3Cpath%20d%3D%27M76%2076%20L164%20164%20M164%2076%20L76%20164%27%20stroke%3D%27%238f8880%27%20stroke-width%3D%2713%27%20stroke-linecap%3D%27round%27/%3E%0A%3C/svg%3E", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_01", "name": "acc_01", "src": "assets/embedded/img_013.png", "thumb": "assets/embedded/img_014.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_02", "name": "acc_02", "src": "assets/embedded/img_015.png", "thumb": "assets/embedded/img_016.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_03", "name": "acc_03", "src": "assets/embedded/img_017.png", "thumb": "assets/embedded/img_018.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_04", "name": "acc_04", "src": "assets/embedded/img_019.png", "thumb": "assets/embedded/img_020.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_05", "name": "acc_05", "src": "assets/embedded/img_021.png", "thumb": "assets/embedded/img_022.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_06", "name": "acc_06", "src": "assets/embedded/img_023.png", "thumb": "assets/embedded/img_024.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_07", "name": "acc_07", "src": "assets/embedded/img_025.png", "thumb": "assets/embedded/img_026.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_08", "name": "acc_08", "src": "assets/embedded/img_027.png", "thumb": "assets/embedded/img_028.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_09", "name": "acc_09", "src": "assets/embedded/img_029.png", "thumb": "assets/embedded/img_030.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_10", "name": "acc_10", "src": "assets/embedded/img_031.png", "thumb": "assets/embedded/img_032.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_11", "name": "acc_11", "src": "assets/embedded/img_033.png", "thumb": "assets/embedded/img_034.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_12", "name": "acc_12", "src": "assets/embedded/img_035.png", "thumb": "assets/embedded/img_036.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "acc_13", "name": "acc_13", "src": "assets/embedded/img_037.png", "thumb": "assets/embedded/img_038.png", "x": 0, "y": 0, "width": 1580, "height": 2270}], "outerwear": [{"id": "none", "name": "없음", "src": "", "thumb": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20240%20240%27%3E%0A%3Crect%20x%3D%2724%27%20y%3D%2724%27%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2730%27%20fill%3D%27%23fffdf8%27%20stroke%3D%27%23b7b1aa%27%20stroke-width%3D%279%27%20stroke-dasharray%3D%2715%2011%27/%3E%0A%3Cpath%20d%3D%27M76%2076%20L164%20164%20M164%2076%20L76%20164%27%20stroke%3D%27%238f8880%27%20stroke-width%3D%2713%27%20stroke-linecap%3D%27round%27/%3E%0A%3C/svg%3E", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "outer_01", "name": "outer_01", "src": "assets/embedded/img_039.png", "thumb": "assets/embedded/img_040.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "outer_02", "name": "outer_02", "src": "assets/embedded/img_041.png", "thumb": "assets/embedded/img_042.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "outer_03", "name": "outer_03", "src": "assets/embedded/img_043.png", "thumb": "assets/embedded/img_044.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "outer_04", "name": "outer_04", "src": "assets/embedded/img_045.png", "thumb": "assets/embedded/img_046.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "outer_05", "name": "outer_05", "src": "assets/embedded/img_047.png", "thumb": "assets/embedded/img_048.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "outer_06", "name": "outer_06", "src": "assets/embedded/img_049.png", "thumb": "assets/embedded/img_050.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "outer_07", "name": "outer_07", "src": "assets/embedded/img_051.png", "thumb": "assets/embedded/img_052.png", "x": 0, "y": 0, "width": 1580, "height": 2270}], "top": [{"id": "none", "name": "없음", "src": "", "thumb": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20240%20240%27%3E%0A%3Crect%20x%3D%2724%27%20y%3D%2724%27%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2730%27%20fill%3D%27%23fffdf8%27%20stroke%3D%27%23b7b1aa%27%20stroke-width%3D%279%27%20stroke-dasharray%3D%2715%2011%27/%3E%0A%3Cpath%20d%3D%27M76%2076%20L164%20164%20M164%2076%20L76%20164%27%20stroke%3D%27%238f8880%27%20stroke-width%3D%2713%27%20stroke-linecap%3D%27round%27/%3E%0A%3C/svg%3E", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_01", "name": "top_01", "src": "assets/embedded/img_053.png", "thumb": "assets/embedded/img_054.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_02", "name": "top_02", "src": "assets/embedded/img_055.png", "thumb": "assets/embedded/img_056.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_03", "name": "top_03", "src": "assets/embedded/img_057.png", "thumb": "assets/embedded/img_058.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_04", "name": "top_04", "src": "assets/embedded/img_059.png", "thumb": "assets/embedded/img_060.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_05", "name": "top_05", "src": "assets/embedded/img_061.png", "thumb": "assets/embedded/img_062.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_06", "name": "top_06", "src": "assets/embedded/img_063.png", "thumb": "assets/embedded/img_064.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_07", "name": "top_07", "src": "assets/embedded/img_065.png", "thumb": "assets/embedded/img_066.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_08", "name": "top_08", "src": "assets/embedded/img_067.png", "thumb": "assets/embedded/img_068.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_09", "name": "top_09", "src": "assets/embedded/img_069.png", "thumb": "assets/embedded/img_070.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_10", "name": "top_10", "src": "assets/embedded/img_071.png", "thumb": "assets/embedded/img_072.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_11", "name": "top_11", "src": "assets/embedded/img_073.png", "thumb": "assets/embedded/img_074.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "top_12", "name": "top_12", "src": "assets/embedded/img_075.png", "thumb": "assets/embedded/img_076.png", "x": 0, "y": 0, "width": 1580, "height": 2270}], "bottom": [{"id": "none", "name": "없음", "src": "", "thumb": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20240%20240%27%3E%0A%3Crect%20x%3D%2724%27%20y%3D%2724%27%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2730%27%20fill%3D%27%23fffdf8%27%20stroke%3D%27%23b7b1aa%27%20stroke-width%3D%279%27%20stroke-dasharray%3D%2715%2011%27/%3E%0A%3Cpath%20d%3D%27M76%2076%20L164%20164%20M164%2076%20L76%20164%27%20stroke%3D%27%238f8880%27%20stroke-width%3D%2713%27%20stroke-linecap%3D%27round%27/%3E%0A%3C/svg%3E", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_01", "name": "bottom_01", "src": "assets/embedded/img_077.png", "thumb": "assets/embedded/img_078.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_02", "name": "bottom_02", "src": "assets/embedded/img_079.png", "thumb": "assets/embedded/img_080.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_03", "name": "bottom_03", "src": "assets/embedded/img_081.png", "thumb": "assets/embedded/img_082.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_04", "name": "bottom_04", "src": "assets/embedded/img_083.png", "thumb": "assets/embedded/img_084.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_05", "name": "bottom_05", "src": "assets/embedded/img_085.png", "thumb": "assets/embedded/img_086.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_06", "name": "bottom_06", "src": "assets/embedded/img_087.png", "thumb": "assets/embedded/img_088.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_07", "name": "bottom_07", "src": "assets/embedded/img_089.png", "thumb": "assets/embedded/img_090.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_08", "name": "bottom_08", "src": "assets/embedded/img_091.png", "thumb": "assets/embedded/img_092.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_09", "name": "bottom_09", "src": "assets/embedded/img_093.png", "thumb": "assets/embedded/img_094.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_10", "name": "bottom_10", "src": "assets/embedded/img_095.png", "thumb": "assets/embedded/img_096.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "bottom_11", "name": "bottom_11", "src": "assets/embedded/img_097.png", "thumb": "assets/embedded/img_098.png", "x": 0, "y": 0, "width": 1580, "height": 2270}], "shoes": [{"id": "none", "name": "없음", "src": "", "thumb": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20240%20240%27%3E%0A%3Crect%20x%3D%2724%27%20y%3D%2724%27%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2730%27%20fill%3D%27%23fffdf8%27%20stroke%3D%27%23b7b1aa%27%20stroke-width%3D%279%27%20stroke-dasharray%3D%2715%2011%27/%3E%0A%3Cpath%20d%3D%27M76%2076%20L164%20164%20M164%2076%20L76%20164%27%20stroke%3D%27%238f8880%27%20stroke-width%3D%2713%27%20stroke-linecap%3D%27round%27/%3E%0A%3C/svg%3E", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "shoes_01", "name": "shoes_01", "src": "assets/embedded/img_099.png", "thumb": "assets/embedded/img_100.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "shoes_02", "name": "shoes_02", "src": "assets/embedded/img_101.png", "thumb": "assets/embedded/img_102.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "shoes_03", "name": "shoes_03", "src": "assets/embedded/img_103.png", "thumb": "assets/embedded/img_104.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "shoes_04", "name": "shoes_04", "src": "assets/embedded/img_105.png", "thumb": "assets/embedded/img_106.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "shoes_05", "name": "shoes_05", "src": "assets/embedded/img_107.png", "thumb": "assets/embedded/img_108.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "shoes_06", "name": "shoes_06", "src": "assets/embedded/img_109.png", "thumb": "assets/embedded/img_110.png", "x": 0, "y": 0, "width": 1580, "height": 2270}, {"id": "shoes_07", "name": "shoes_07", "src": "assets/embedded/img_111.png", "thumb": "assets/embedded/img_112.png", "x": 0, "y": 0, "width": 1580, "height": 2270}]};
+    const CATEGORIES = [
+      { id: "background", label: "배경" },
+      { id: "accessory", label: "소품" },
+      { id: "outerwear", label: "겉옷" },
+      { id: "top", label: "상의" },
+      { id: "bottom", label: "하의" },
+      { id: "shoes", label: "신발" }
+    ];
+    const DRAW_ORDER = ["shoes", "bottom", "top", "outerwear", "accessory"];
+
+    const state = {
+      activeCategory: "background",
+      selectedBackground: BACKGROUNDS[0]?.id || "",
+      selected: { outerwear: "none", top: "none", bottom: "none", shoes: "none" },
+      instances: [],
+      activeInstanceId: null
+    };
+    let uidCounter = 1;
+    let dragState = null;
+    const alphaCanvasCache = new Map();
+
+    const avatarSvg = document.getElementById("avatarSvg");
+    const stageWrap = document.getElementById("stageWrap");
+    const wearableLayerRoot = document.getElementById("wearableLayerRoot");
+    const backgroundLayer = document.getElementById("backgroundLayer");
+    const tabsEl = document.getElementById("tabs");
+    const itemsEl = document.getElementById("items");
+    const deleteZone = document.getElementById("deleteZone");
+    const toastEl = document.getElementById("toast");
+    const bgmAudio = document.getElementById("bgmAudio");
+    const speakerBtn = document.getElementById("speakerBtn");
+    const speakerIconPath = document.getElementById("speakerIconPath");
+    const startGameBtn = document.getElementById("startGameBtn");
+    let sfxAudioContext = null;
+    const speakerOnPath = "M4 9v6h4l5 4V5L8 9H4zm12.5-2.2-1.4 1.4A5 5 0 0 1 15.1 15l1.4 1.4a7 7 0 0 0 0-9.6zm2.5-2.4-1.4 1.4a10 10 0 0 1 0 13.4l1.4 1.4a12 12 0 0 0 0-16.2z";
+    const speakerOffPath = "M4 9v6h4l5 4V5L8 9H4zm12.4 1.1-1.4 1.4 1.4 1.4-1.4 1.4 1.4 1.4 1.4-1.4 1.4 1.4 1.4-1.4-1.4-1.4 1.4-1.4-1.4-1.4-1.4 1.4-1.4-1.4z";
+    let bgmWanted = false;
+
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toastEl.classList.remove("show"), 1200);
+    }
+
+
+    function getSfxContext() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!sfxAudioContext) sfxAudioContext = new AudioContextClass();
+      if (sfxAudioContext.state === "suspended") sfxAudioContext.resume();
+      return sfxAudioContext;
+    }
+
+    function playClickSfx() {
+      const ctx = getSfxContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.exponentialRampToValueAtTime(0.12, now + 0.012);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+      master.connect(ctx.destination);
+
+      const oscA = ctx.createOscillator();
+      oscA.type = "sine";
+      oscA.frequency.setValueAtTime(880, now);
+      oscA.frequency.exponentialRampToValueAtTime(1320, now + 0.055);
+      oscA.connect(master);
+      oscA.start(now);
+      oscA.stop(now + 0.135);
+
+      const oscB = ctx.createOscillator();
+      oscB.type = "triangle";
+      oscB.frequency.setValueAtTime(1760, now + 0.018);
+      oscB.frequency.exponentialRampToValueAtTime(2093, now + 0.09);
+      const tiny = ctx.createGain();
+      tiny.gain.setValueAtTime(0.04, now + 0.018);
+      tiny.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+      oscB.connect(tiny).connect(ctx.destination);
+      oscB.start(now + 0.018);
+      oscB.stop(now + 0.115);
+    }
+
+    function getItem(category, itemId) {
+      const list = DATA[category] || [];
+      return list.find(item => item.id === itemId) || list[0];
+    }
+
+    function getBackground(id) {
+      return BACKGROUNDS.find(bg => bg.id === id) || BACKGROUNDS[0];
+    }
+
+    function createInstance(category, itemId) {
+      const item = getItem(category, itemId);
+      if (!item || item.id === "none") return null;
+      return {
+        uid: `item_${uidCounter++}`,
+        category,
+        itemId,
+        dx: 0,
+        dy: 0,
+        createdAt: uidCounter
+      };
+    }
+
+    function removeInstancesByCategory(category) {
+      state.instances = state.instances.filter(inst => inst.category !== category);
+      if (state.activeInstanceId && !state.instances.some(inst => inst.uid === state.activeInstanceId)) {
+        state.activeInstanceId = null;
+      }
+    }
+
+    function removeInstance(uid) {
+      const inst = state.instances.find(item => item.uid === uid);
+      state.instances = state.instances.filter(item => item.uid !== uid);
+      if (inst && inst.category !== "accessory") {
+        state.selected[inst.category] = "none";
+      }
+      if (state.activeInstanceId === uid) state.activeInstanceId = null;
+      renderAll();
+    }
+
+    function sortedInstances() {
+      return [...state.instances].sort((a, b) => {
+        const orderDiff = DRAW_ORDER.indexOf(a.category) - DRAW_ORDER.indexOf(b.category);
+        if (orderDiff !== 0) return orderDiff;
+        return a.createdAt - b.createdAt;
+      });
+    }
+
+    function renderBackground() {
+      const bg = getBackground(state.selectedBackground);
+      if (!bg) {
+        backgroundLayer.innerHTML = `<rect width="1580" height="2270" fill="#fff8e8" />`;
+        return;
+      }
+      if (bg.src) {
+        backgroundLayer.innerHTML = `<image href="${bg.src}" x="0" y="0" width="1580" height="2270" preserveAspectRatio="xMidYMid slice" />`;
+      } else {
+        backgroundLayer.innerHTML = `<rect width="1580" height="2270" fill="${bg.color || '#fff8e8'}" />`;
+      }
+    }
+
+    function renderStage() {
+      renderBackground();
+      wearableLayerRoot.innerHTML = "";
+      sortedInstances().forEach(inst => {
+        const item = getItem(inst.category, inst.itemId);
+        if (!item || !item.src) return;
+        const group = document.createElementNS(NS, "g");
+        group.setAttribute("class", "draggable-layer");
+        group.setAttribute("data-uid", inst.uid);
+        group.setAttribute("data-category", inst.category);
+        group.setAttribute("transform", `translate(${inst.dx} ${inst.dy})`);
+        const image = document.createElementNS(NS, "image");
+        image.setAttribute("href", item.src);
+        image.setAttribute("x", item.x);
+        image.setAttribute("y", item.y);
+        image.setAttribute("width", item.width);
+        image.setAttribute("height", item.height);
+        image.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        image.setAttribute("pointer-events", "none");
+        group.appendChild(image);
+        wearableLayerRoot.appendChild(group);
+      });
+    }
+
+    function renderTabs() {
+      tabsEl.innerHTML = "";
+      CATEGORIES.forEach(category => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tab";
+        btn.textContent = category.label;
+        btn.setAttribute("aria-selected", String(state.activeCategory === category.id));
+        btn.addEventListener("click", () => {
+          state.activeCategory = category.id;
+          renderAll();
+        });
+        tabsEl.appendChild(btn);
+      });
+    }
+
+    function renderItems() {
+      itemsEl.innerHTML = "";
+      if (state.activeCategory === "background") {
+        BACKGROUNDS.forEach(bg => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "item-btn background-thumb";
+          btn.setAttribute("aria-label", bg.name);
+          if (state.selectedBackground === bg.id) btn.classList.add("active");
+          const img = document.createElement("img");
+          img.src = bg.thumb || bg.src;
+          img.alt = "";
+          btn.appendChild(img);
+          btn.addEventListener("click", () => {
+            state.selectedBackground = bg.id;
+            renderAll();
+          });
+          itemsEl.appendChild(btn);
+        });
+        return;
+      }
+
+      const list = DATA[state.activeCategory] || [];
+      list.forEach(item => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "item-btn";
+        btn.setAttribute("aria-label", item.name);
+        if (state.activeCategory === "accessory") {
+          if (item.id === "none") {
+            if (!state.instances.some(inst => inst.category === "accessory")) btn.classList.add("active");
+          } else if (state.instances.some(inst => inst.category === "accessory" && inst.itemId === item.id)) {
+            btn.classList.add("active");
+          }
+        } else if (state.selected[state.activeCategory] === item.id) {
+          btn.classList.add("active");
+        }
+        const img = document.createElement("img");
+        img.src = item.thumb || item.src;
+        img.alt = "";
+        btn.appendChild(img);
+        btn.addEventListener("click", () => selectItem(state.activeCategory, item.id));
+        itemsEl.appendChild(btn);
+      });
+    }
+
+    function selectItem(category, itemId) {
+      if (category === "accessory") {
+        if (itemId === "none") {
+          removeInstancesByCategory("accessory");
+          state.activeInstanceId = null;
+        } else {
+          const inst = createInstance(category, itemId);
+          if (inst) {
+            state.instances.push(inst);
+            state.activeInstanceId = inst.uid;
+          }
+        }
+      } else {
+        state.selected[category] = itemId;
+        removeInstancesByCategory(category);
+        const inst = createInstance(category, itemId);
+        if (inst) {
+          state.instances.push(inst);
+          state.activeInstanceId = inst.uid;
+        }
+      }
+      renderAll();
+    }
+
+    function renderAll() {
+      renderTabs();
+      renderItems();
+      renderStage();
+    }
+
+    function svgPoint(event) {
+      const matrix = avatarSvg.getScreenCTM();
+      const point = avatarSvg.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      return matrix ? point.matrixTransform(matrix.inverse()) : { x: 0, y: 0 };
+    }
+
+    function loadAlphaCanvas(src) {
+      if (alphaCanvasCache.has(src)) return alphaCanvasCache.get(src);
+      const promise = new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(img, 0, 0);
+          resolve({ canvas, ctx, width: canvas.width, height: canvas.height });
+        };
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+      alphaCanvasCache.set(src, promise);
+      return promise;
+    }
+
+    async function isOpaqueHit(inst, point) {
+      const item = getItem(inst.category, inst.itemId);
+      if (!item || !item.src) return false;
+      const alphaData = await loadAlphaCanvas(item.src);
+      if (!alphaData) return false;
+      const localX = point.x - inst.dx;
+      const localY = point.y - inst.dy;
+      if (localX < item.x || localY < item.y || localX > item.x + item.width || localY > item.y + item.height) return false;
+      const pixelX = Math.floor((localX - item.x) / item.width * alphaData.width);
+      const pixelY = Math.floor((localY - item.y) / item.height * alphaData.height);
+      if (pixelX < 0 || pixelY < 0 || pixelX >= alphaData.width || pixelY >= alphaData.height) return false;
+      const alpha = alphaData.ctx.getImageData(pixelX, pixelY, 1, 1).data[3];
+      return alpha > 10;
+    }
+
+    async function findTopInstanceAtPoint(point) {
+      const list = sortedInstances().reverse();
+      for (const inst of list) {
+        if (await isOpaqueHit(inst, point)) return inst;
+      }
+      return null;
+    }
+
+    function updateDeleteZone(clientX, clientY) {
+      const rect = stageWrap.getBoundingClientRect();
+      const zoneHeight = Math.min(110, Math.max(74, rect.height * 0.14));
+      const insideStageX = clientX >= rect.left && clientX <= rect.right;
+      const insideStageY = clientY >= rect.top && clientY <= rect.bottom;
+      const hot = insideStageX && insideStageY && clientY >= rect.bottom - zoneHeight;
+      deleteZone.classList.toggle("hot", hot);
+      return hot;
+    }
+
+    avatarSvg.addEventListener("pointerdown", async event => {
+      const point = svgPoint(event);
+      const inst = await findTopInstanceAtPoint(point);
+      if (!inst) return;
+      event.preventDefault();
+      dragState = {
+        uid: inst.uid,
+        pointerId: event.pointerId,
+        startX: point.x,
+        startY: point.y,
+        baseX: inst.dx,
+        baseY: inst.dy
+      };
+      state.activeInstanceId = inst.uid;
+      state.activeCategory = inst.category;
+      deleteZone.classList.add("show");
+      renderTabs();
+      renderItems();
+      try { avatarSvg.setPointerCapture(event.pointerId); } catch (error) {}
+    });
+
+    window.addEventListener("pointermove", event => {
+      if (!dragState) return;
+      event.preventDefault();
+      const inst = state.instances.find(item => item.uid === dragState.uid);
+      if (!inst) return;
+      const point = svgPoint(event);
+      inst.dx = dragState.baseX + point.x - dragState.startX;
+      inst.dy = dragState.baseY + point.y - dragState.startY;
+      updateDeleteZone(event.clientX, event.clientY);
+      renderStage();
+    }, { passive: false });
+
+    function finishDrag(event) {
+      if (!dragState) return;
+      const shouldDelete = event && updateDeleteZone(event.clientX, event.clientY);
+      const uid = dragState.uid;
+      dragState = null;
+      deleteZone.classList.remove("show", "hot");
+      if (shouldDelete) {
+        removeInstance(uid);
+        showToast("삭제했어요.");
+        return;
+      }
+      renderStage();
+    }
+
+    window.addEventListener("pointerup", finishDrag);
+    window.addEventListener("pointercancel", finishDrag);
+
+    function reset() {
+      state.selectedBackground = BACKGROUNDS[0]?.id || "";
+      state.selected = { outerwear: "none", top: "none", bottom: "none", shoes: "none" };
+      state.instances = [];
+      state.activeInstanceId = null;
+      renderAll();
+    }
+
+    function randomPick() {
+      reset();
+      if (BACKGROUNDS.length) state.selectedBackground = BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)].id;
+      ["outerwear", "top", "bottom", "shoes"].forEach(category => {
+        const list = (DATA[category] || []).filter(item => item.id !== "none");
+        if (list.length && Math.random() > 0.18) {
+          const item = list[Math.floor(Math.random() * list.length)];
+          state.selected[category] = item.id;
+          const inst = createInstance(category, item.id);
+          if (inst) state.instances.push(inst);
+        }
+      });
+      const accList = (DATA.accessory || []).filter(item => item.id !== "none");
+      const accCount = Math.min(accList.length, Math.floor(Math.random() * 3));
+      for (let i = 0; i < accCount; i++) {
+        const item = accList[Math.floor(Math.random() * accList.length)];
+        const inst = createInstance("accessory", item.id);
+        if (inst) state.instances.push(inst);
+      }
+      renderAll();
+    }
+
+    async function downloadPng() {
+      const clone = avatarSvg.cloneNode(true);
+      clone.setAttribute("width", "1580");
+      clone.setAttribute("height", "2270");
+      clone.setAttribute("xmlns", NS);
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(clone);
+      const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1580;
+        canvas.height = 2270;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        const link = document.createElement("a");
+        link.download = "wheen_gu-dressup.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        showToast("저장 중 오류가 났어요.");
+      };
+      img.src = url;
+    }
+
+    function updateSpeaker() {
+      const playing = !bgmAudio.paused;
+      speakerBtn.classList.toggle("is-playing", playing);
+      speakerBtn.setAttribute("aria-label", playing ? "배경음악 끄기" : "배경음악 켜기");
+      speakerIconPath.setAttribute("d", playing ? speakerOnPath : speakerOffPath);
+    }
+
+    async function playBgm() {
+      if (!bgmAudio.src) return false;
+      try {
+        bgmAudio.muted = false;
+        bgmAudio.volume = 0.36;
+        await bgmAudio.play();
+        updateSpeaker();
+        return true;
+      } catch (error) {
+        updateSpeaker();
+        return false;
+      }
+    }
+
+    function pauseBgm() {
+      bgmAudio.pause();
+      updateSpeaker();
+    }
+
+    async function enterGame() {
+      document.body.classList.add("game-started");
+      bgmWanted = true;
+      await playBgm();
+    }
+
+    document.addEventListener("pointerdown", event => {
+      if (event.target.closest("button, .instagram-link")) playClickSfx();
+    }, true);
+    document.addEventListener("keydown", event => {
+      if ((event.key === "Enter" || event.key === " ") && event.target.closest("button, .instagram-link")) {
+        playClickSfx();
+      }
+    }, true);
+
+    startGameBtn.addEventListener("click", async event => {
+      event.preventDefault();
+      await enterGame();
+    });
+
+    speakerBtn.addEventListener("pointerdown", event => {
+      event.stopPropagation();
+    });
+    speakerBtn.addEventListener("click", async event => {
+      event.preventDefault();
+      event.stopPropagation();
+      bgmWanted = bgmAudio.paused;
+      if (bgmWanted) await playBgm(); else pauseBgm();
+    });
+    bgmAudio.addEventListener("play", updateSpeaker);
+    bgmAudio.addEventListener("pause", updateSpeaker);
+
+    document.getElementById("randomBtn").addEventListener("click", randomPick);
+    document.getElementById("resetBtn").addEventListener("click", reset);
+    document.getElementById("downloadBtn").addEventListener("click", downloadPng);
+
+    renderAll();
+    updateSpeaker();
+  </script>
+</body>
+</html>
