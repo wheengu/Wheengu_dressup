@@ -766,34 +766,105 @@
       renderAll();
     }
 
+    function resolveAssetSrc(src) {
+      if (!src) return "";
+      if (src.startsWith("data:") || src.startsWith("blob:")) return src;
+      return new URL(src, window.location.href).href;
+    }
+
+    function loadDrawableImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.decoding = "async";
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`이미지를 불러오지 못했어요: ${src}`));
+        img.src = resolveAssetSrc(src);
+      });
+    }
+
+    function drawImageCover(ctx, img, x, y, width, height) {
+      const imageWidth = img.naturalWidth || img.width;
+      const imageHeight = img.naturalHeight || img.height;
+      const scale = Math.max(width / imageWidth, height / imageHeight);
+      const cropWidth = width / scale;
+      const cropHeight = height / scale;
+      const cropX = (imageWidth - cropWidth) / 2;
+      const cropY = (imageHeight - cropHeight) / 2;
+      ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, x, y, width, height);
+    }
+
+    function drawImageContain(ctx, img, x, y, width, height) {
+      const imageWidth = img.naturalWidth || img.width;
+      const imageHeight = img.naturalHeight || img.height;
+      const scale = Math.min(width / imageWidth, height / imageHeight);
+      const drawWidth = imageWidth * scale;
+      const drawHeight = imageHeight * scale;
+      const drawX = x + (width - drawWidth) / 2;
+      const drawY = y + (height - drawHeight) / 2;
+      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+    }
+
+    function saveCanvasAsPng(canvas, filename) {
+      if (canvas.toBlob) {
+        canvas.toBlob(blob => {
+          if (!blob) {
+            showToast("저장 중 오류가 났어요.");
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = filename;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, "image/png");
+      } else {
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = canvas.toDataURL("image/png");
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    }
+
     async function downloadPng() {
-      const clone = avatarSvg.cloneNode(true);
-      clone.setAttribute("width", "1580");
-      clone.setAttribute("height", "2270");
-      clone.setAttribute("xmlns", NS);
-      const serializer = new XMLSerializer();
-      const svgString = serializer.serializeToString(clone);
-      const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.decoding = "async";
-      img.onload = () => {
+      try {
         const canvas = document.createElement("canvas");
         canvas.width = 1580;
         canvas.height = 2270;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
-        const link = document.createElement("a");
-        link.download = "wheen_gu-dressup.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const bg = getBackground(state.selectedBackground);
+        if (bg && bg.src) {
+          const bgImage = await loadDrawableImage(bg.src);
+          drawImageCover(ctx, bgImage, 0, 0, 1580, 2270);
+        } else {
+          ctx.fillStyle = (bg && bg.color) || "#fff8e8";
+          ctx.fillRect(0, 0, 1580, 2270);
+        }
+
+        const baseSrc = document.getElementById("baseCharacter")?.getAttribute("href") || "";
+        if (baseSrc) {
+          const baseImage = await loadDrawableImage(baseSrc);
+          drawImageContain(ctx, baseImage, 0, 0, 1580, 2270);
+        }
+
+        for (const inst of sortedInstances()) {
+          const item = getItem(inst.category, inst.itemId);
+          if (!item || !item.src) continue;
+          const itemImage = await loadDrawableImage(item.src);
+          ctx.drawImage(itemImage, item.x + inst.dx, item.y + inst.dy, item.width, item.height);
+        }
+
+        saveCanvasAsPng(canvas, "wheen_gu-dressup.png");
+      } catch (error) {
+        console.warn(error);
         showToast("저장 중 오류가 났어요.");
-      };
-      img.src = url;
+      }
     }
 
     function updateSpeaker() {
